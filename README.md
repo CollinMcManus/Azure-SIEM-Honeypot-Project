@@ -23,6 +23,11 @@ This honeypot project highlights configuring and use of industry tools such as A
 This project is a great example of how to efficiently use Azure Sentinely as a SIEM. Utilizing a honeypot is a great way to gather insight into attacks, doing so in an isolated, virtual environment eliminates the risk involved. While this project demonstrates real world attacks, it is important to recognize the risk that comes with turning off all firewalls, especially outside of an isolated environment.
 
 
+### Update
+although it is only set to show up to 24 hours, I thought I would share what the map looks like now. ![image](https://github.com/user-attachments/assets/305ca998-4681-4aa9-99e2-e5acccd50328)
+
+
+
 
 
 
