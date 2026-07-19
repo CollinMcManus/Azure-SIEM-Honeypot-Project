@@ -1,0 +1,57 @@
+// Microsoft Sentinel / Log Analytics queries for Windows failed-logon analysis.
+// Adjust field names if your connector or custom table uses a different schema.
+
+// 1. Failed-logon activity by source IP and hour
+SecurityEvent
+| where TimeGenerated >= ago(24h)
+| where EventID == 4625
+| where isnotempty(IpAddress) and IpAddress !in ("-", "127.0.0.1", "::1")
+| summarize
+    Attempts = count(),
+    TargetedAccounts = dcount(TargetAccount)
+    by IpAddress, Computer, bin(TimeGenerated, 1h)
+| order by Attempts desc
+
+// 2. Most frequently targeted accounts
+SecurityEvent
+| where TimeGenerated >= ago(24h)
+| where EventID == 4625
+| summarize
+    Attempts = count(),
+    UniqueSourceIps = dcount(IpAddress)
+    by TargetAccount
+| order by Attempts desc
+
+// 3. Possible success following failures from the same source
+let FailedLogons = SecurityEvent
+| where TimeGenerated >= ago(24h)
+| where EventID == 4625
+| where isnotempty(IpAddress) and IpAddress != "-"
+| project
+    FailureTime = TimeGenerated,
+    Computer,
+    IpAddress,
+    FailedAccount = TargetAccount;
+let SuccessfulLogons = SecurityEvent
+| where TimeGenerated >= ago(24h)
+| where EventID == 4624
+| where isnotempty(IpAddress) and IpAddress != "-"
+| project
+    SuccessTime = TimeGenerated,
+    Computer,
+    IpAddress,
+    SuccessfulAccount = TargetAccount,
+    LogonType;
+FailedLogons
+| join kind=inner SuccessfulLogons on Computer, IpAddress
+| where SuccessTime between (FailureTime .. FailureTime + 30m)
+| project
+    FailureTime,
+    SuccessTime,
+    Computer,
+    IpAddress,
+    FailedAccount,
+    SuccessfulAccount,
+    LogonType
+| order by SuccessTime desc
+
